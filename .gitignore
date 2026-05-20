@@ -1,0 +1,7 @@
+WaterQualitySystem
+*.o
+output/
+backups/
+data/auth/users.dat
+/tmp/
+*.tmp

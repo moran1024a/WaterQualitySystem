@@ -1,33 +1,63 @@
 #include "data_manage.h"
 #include "preprocess.h"
+#include "file_io.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "utils.h"
 
-/*
- * data_manage.c
- *
- * 数据查询、排序、修改、删除模块函数框架。
- */
+static WQParameter g_sort_param = WQ_PARAM_TEMP;
+static WQSortOrder g_sort_order = WQ_SORT_ASC;
+
+static int wq_cmp_record(const void *a, const void *b)
+{
+    const WaterQualityRecord *ra = (const WaterQualityRecord *)a;
+    const WaterQualityRecord *rb = (const WaterQualityRecord *)b;
+    size_t p = (size_t)g_sort_param;
+    bool ma = ra->missing[p];
+    bool mb = rb->missing[p];
+    if (ma && mb) return 0;
+    if (ma) return 1;
+    if (mb) return -1;
+    if (ra->value[p] < rb->value[p]) return (g_sort_order == WQ_SORT_ASC) ? -1 : 1;
+    if (ra->value[p] > rb->value[p]) return (g_sort_order == WQ_SORT_ASC) ? 1 : -1;
+    return 0;
+}
 
 void wq_print_record(const WaterQualityRecord *record)
 {
-    /* 待实现：按表格形式输出记录编号、时间和六个参数。 */
-    (void)record;
+    size_t i;
+    if (record == NULL) return;
+    printf("[%lu] %04d-%02d-%02d %02d:%02d ", (unsigned long)record->index,
+           record->time.year, record->time.month, record->time.day, record->time.hour, record->time.minute);
+    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i) {
+        if (record->missing[i]) printf("| %s=NaN ", wq_parameter_to_string((WQParameter)i));
+        else printf("| %s=%.3f ", wq_parameter_to_string((WQParameter)i), record->value[i]);
+    }
+    printf("\n");
 }
 
 void wq_print_page(const WaterQualityDataset *dataset, size_t page_index, size_t page_size)
 {
-    /* 待实现：分页显示，每页默认 15 条记录。 */
-    (void)dataset;
-    (void)page_index;
-    (void)page_size;
+    size_t start, end, i;
+    if (dataset == NULL || dataset->size == 0U) {
+        printf("数据为空。\n");
+        return;
+    }
+    if (page_size == 0U) page_size = WQ_PAGE_SIZE;
+    if (page_index >= wq_get_total_pages(dataset, page_size)) {
+        printf("页码越界。\n");
+        return;
+    }
+    start = page_index * page_size;
+    end = start + page_size;
+    if (end > dataset->size) end = dataset->size;
+    for (i = start; i < end; ++i) wq_print_record(&dataset->records[i]);
 }
 
 size_t wq_get_total_pages(const WaterQualityDataset *dataset, size_t page_size)
 {
-    if (dataset == NULL || page_size == 0U) {
-        return 0U;
-    }
-
+    if (dataset == NULL || page_size == 0U) return 0U;
     return (dataset->size + page_size - 1U) / page_size;
 }
 
@@ -37,22 +67,26 @@ int wq_filter_by_range(const WaterQualityDataset *src,
                        double min_value,
                        double max_value)
 {
-    /* 待实现：将参数值位于 [min_value, max_value] 的记录复制到 dst。 */
-    (void)src;
-    (void)dst;
-    (void)parameter;
-    (void)min_value;
-    (void)max_value;
-    return WQ_ERROR;
+    size_t i;
+    if (src == NULL || dst == NULL || parameter < 0 || parameter >= WQ_PARAM_COUNT || min_value > max_value) return WQ_ERROR;
+    wq_dataset_clear(dst);
+    if (dst->capacity < src->size && wq_dataset_reserve(dst, src->size) != WQ_SUCCESS) return WQ_ERROR;
+    for (i = 0U; i < src->size; ++i) {
+        const WaterQualityRecord *r = &src->records[i];
+        if (!r->missing[(size_t)parameter] && r->value[(size_t)parameter] >= min_value && r->value[(size_t)parameter] <= max_value) {
+            if (wq_dataset_push(dst, r) != WQ_SUCCESS) return WQ_ERROR;
+        }
+    }
+    return WQ_SUCCESS;
 }
 
 int wq_sort_dataset(WaterQualityDataset *dataset, WQParameter parameter, WQSortOrder order)
 {
-    /* 待实现：按指定参数升序或降序排序，可使用 qsort。 */
-    (void)dataset;
-    (void)parameter;
-    (void)order;
-    return WQ_ERROR;
+    if (dataset == NULL || parameter < 0 || parameter >= WQ_PARAM_COUNT) return WQ_ERROR;
+    g_sort_param = parameter;
+    g_sort_order = order;
+    qsort(dataset->records, dataset->size, sizeof(WaterQualityRecord), wq_cmp_record);
+    return WQ_SUCCESS;
 }
 
 int wq_modify_record_value(WaterQualityDataset *dataset,
@@ -60,26 +94,20 @@ int wq_modify_record_value(WaterQualityDataset *dataset,
                            WQParameter parameter,
                            double new_value)
 {
-    /* 修改前先做参数范围校验，真正保存由调用方决定。 */
-    if (dataset == NULL || record_index >= dataset->size) {
-        return WQ_ERROR;
-    }
-
-    if (!wq_is_value_in_range(parameter, new_value)) {
-        return WQ_ERROR;
-    }
-
-    dataset->records[record_index].value[parameter] = new_value;
-    dataset->records[record_index].missing[parameter] = false;
+    if (dataset == NULL || record_index >= dataset->size) return WQ_ERROR;
+    if (!wq_is_value_in_range(parameter, new_value)) return WQ_ERROR;
+    dataset->records[record_index].value[(size_t)parameter] = new_value;
+    dataset->records[record_index].missing[(size_t)parameter] = false;
     return WQ_SUCCESS;
 }
 
 int wq_delete_record(WaterQualityDataset *dataset, size_t record_index)
 {
-    /* 待实现：删除单条记录，可将后续元素整体前移。 */
-    (void)dataset;
-    (void)record_index;
-    return WQ_ERROR;
+    size_t i;
+    if (dataset == NULL || record_index >= dataset->size) return WQ_ERROR;
+    for (i = record_index + 1U; i < dataset->size; ++i) dataset->records[i - 1U] = dataset->records[i];
+    dataset->size--;
+    return WQ_SUCCESS;
 }
 
 size_t wq_delete_records_by_range(WaterQualityDataset *dataset,
@@ -87,10 +115,14 @@ size_t wq_delete_records_by_range(WaterQualityDataset *dataset,
                                   double min_value,
                                   double max_value)
 {
-    /* 待实现：按条件批量删除，返回实际删除数量。 */
-    (void)dataset;
-    (void)parameter;
-    (void)min_value;
-    (void)max_value;
-    return 0U;
+    size_t i, kept = 0U, deleted = 0U;
+    if (dataset == NULL || parameter < 0 || parameter >= WQ_PARAM_COUNT || min_value > max_value) return 0U;
+    for (i = 0U; i < dataset->size; ++i) {
+        WaterQualityRecord r = dataset->records[i];
+        bool hit = !r.missing[(size_t)parameter] && r.value[(size_t)parameter] >= min_value && r.value[(size_t)parameter] <= max_value;
+        if (hit) deleted++;
+        else dataset->records[kept++] = r;
+    }
+    dataset->size = kept;
+    return deleted;
 }

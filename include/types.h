@@ -155,6 +155,9 @@ typedef struct DataOverview {
     size_t outlier_parameter_count;
     WQDateTime first_outlier_time;
     WQDateTime last_outlier_time;
+    double filter_stddev_before[WQ_PARAM_COUNT];
+    double filter_stddev_after[WQ_PARAM_COUNT];
+    double filter_stddev_delta[WQ_PARAM_COUNT];
 } DataOverview;
 
 /* 单个参数的基本统计量 */
