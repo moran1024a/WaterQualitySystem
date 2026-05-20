@@ -299,6 +299,7 @@ int wq_compare_storage_formats(const WaterQualityDataset *dataset,
     csv_result->file_size_bytes = (unsigned long)ftell(fp);
     fclose(fp);
     csv_result->format = WQ_STORAGE_CSV;
+    csv_result->human_readable = true;
 
     begin = clock();
     if (wq_write_binary(binary_file, dataset) != WQ_SUCCESS) return WQ_ERROR;
@@ -316,6 +317,7 @@ int wq_compare_storage_formats(const WaterQualityDataset *dataset,
     binary_result->file_size_bytes = (unsigned long)ftell(fp);
     fclose(fp);
     binary_result->format = WQ_STORAGE_BINARY;
+    binary_result->human_readable = false;
 
     return WQ_SUCCESS;
 }

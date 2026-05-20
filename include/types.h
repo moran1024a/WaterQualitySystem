@@ -142,6 +142,15 @@ typedef struct WaterQualityDataset {
     size_t capacity;
 } WaterQualityDataset;
 
+/* CSV 与二进制存储性能对比结果 */
+typedef struct StorageBenchmark {
+    WQStorageFormat format;
+    unsigned long file_size_bytes;
+    double write_seconds;
+    double read_seconds;
+    bool human_readable;
+} StorageBenchmark;
+
 /* 数据概览统计。 */
 typedef struct DataOverview {
     size_t total_records;
@@ -158,6 +167,17 @@ typedef struct DataOverview {
     double filter_stddev_before[WQ_PARAM_COUNT];
     double filter_stddev_after[WQ_PARAM_COUNT];
     double filter_stddev_delta[WQ_PARAM_COUNT];
+
+    size_t filter_windows[WQ_FILTER_WINDOW_COUNT];
+    double filter_window_stddev_before[WQ_FILTER_WINDOW_COUNT][WQ_PARAM_COUNT];
+    double filter_window_stddev_after[WQ_FILTER_WINDOW_COUNT][WQ_PARAM_COUNT];
+    double filter_window_stddev_delta[WQ_FILTER_WINDOW_COUNT][WQ_PARAM_COUNT];
+    size_t best_filter_window[WQ_PARAM_COUNT];
+    bool filter_window_comparison_valid;
+
+    StorageBenchmark csv_storage;
+    StorageBenchmark binary_storage;
+    bool storage_benchmark_valid;
 } DataOverview;
 
 /* 单个参数的基本统计量 */
@@ -192,15 +212,6 @@ typedef struct LinearRegressionModel {
     double r_squared;
     double rmse;
 } LinearRegressionModel;
-
-/* CSV 与二进制存储性能对比结果 */
-typedef struct StorageBenchmark {
-    WQStorageFormat format;
-    unsigned long file_size_bytes;
-    double write_seconds;
-    double read_seconds;
-    bool human_readable;
-} StorageBenchmark;
 
 /* 分析讨论主题。用于将任务书要求的讨论性结论统一写入报告。 */
 typedef enum WQDiscussionTopic {

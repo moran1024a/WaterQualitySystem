@@ -53,7 +53,25 @@ int wq_create_user(UserStore *store,const char *username,const char *password,WQ
 int wq_export_users_to_csv(const UserStore *store,const char *csv_filename,bool include_builtin_users){ FILE *fp; size_t i,j; if(!store||!csv_filename) return WQ_ERROR; if(wq_ensure_directory("output")!=WQ_SUCCESS) return WQ_ERROR; fp=fopen(csv_filename,"w"); if(!fp) return WQ_ERROR; fprintf(fp,"username,role,source,status,salt_hex,password_md5\n"); for(i=0;i<store->count;i++){ const UserAccount *a=&store->users[i]; if(!include_builtin_users&&a->source==WQ_USER_SOURCE_BUILTIN) continue; fprintf(fp,"%s,%u,%u,%u,",a->username,(unsigned)a->role,(unsigned)a->source,(unsigned)a->status); for(j=0;j<WQ_SALT_LENGTH;j++) fprintf(fp,"%02x",a->salt[j]); fprintf(fp,",%s\n",a->password_hash); } return fclose(fp)==0?WQ_SUCCESS:WQ_ERROR; }
 
 /* permissions and strings reuse prior logic */
-bool wq_role_can_execute(WQUserRole role, WQOperation operation){ if(operation==WQ_OP_NONE) return false; if(operation==WQ_OP_LOGIN||operation==WQ_OP_SYSTEM_STARTUP||operation==WQ_OP_EXIT_SYSTEM) return true; if(role==WQ_ROLE_ADMIN) return true; if(role==WQ_ROLE_GUEST){ return operation==WQ_OP_VIEW_OVERVIEW||operation==WQ_OP_STATISTICS_MENU||operation==WQ_OP_STATISTICS_ANALYSIS||operation==WQ_OP_VIEW_ANALYSIS_REPORT; } if(role==WQ_ROLE_USER){ return operation!=WQ_OP_USER_MENU&&operation!=WQ_OP_CREATE_USER&&operation!=WQ_OP_EXPORT_USERS&&operation!=WQ_OP_RESTORE_DATA&&operation!=WQ_OP_MODIFY_DATA&&operation!=WQ_OP_DELETE_DATA; } return false; }
+bool wq_role_can_execute(WQUserRole role, WQOperation operation)
+{
+    if (operation == WQ_OP_NONE) return false;
+    if (operation == WQ_OP_LOGIN || operation == WQ_OP_SYSTEM_STARTUP ||
+        operation == WQ_OP_EXIT_SYSTEM || operation == WQ_OP_CLEAR_SCREEN) return true;
+    if (role == WQ_ROLE_ADMIN) return true;
+    if (role == WQ_ROLE_GUEST) {
+        return operation == WQ_OP_VIEW_OVERVIEW || operation == WQ_OP_VIEW_ANALYSIS_REPORT;
+    }
+    if (role == WQ_ROLE_USER) {
+        return operation != WQ_OP_USER_MENU &&
+               operation != WQ_OP_CREATE_USER &&
+               operation != WQ_OP_EXPORT_USERS &&
+               operation != WQ_OP_RESTORE_DATA &&
+               operation != WQ_OP_MODIFY_DATA &&
+               operation != WQ_OP_DELETE_DATA;
+    }
+    return false;
+}
 bool wq_user_can_execute(const UserAccount *user, WQOperation operation){ return user&&user->status==WQ_USER_STATUS_ACTIVE&&wq_role_can_execute(user->role,operation);} int wq_require_permission(const UserAccount *user, WQOperation operation){ return wq_user_can_execute(user,operation)?WQ_SUCCESS:WQ_ERROR; }
 WQOperation wq_main_menu_option_to_operation(int menu_option){ switch(menu_option){case 1:return WQ_OP_DATA_MENU;case 2:return WQ_OP_PREPROCESS_MENU;case 3:return WQ_OP_STATISTICS_MENU;case 4:return WQ_OP_PREDICTION_MENU;case 5:return WQ_OP_VIEW_OVERVIEW;case 6:return WQ_OP_VIEW_WARNING_REPORT;case 7:return WQ_OP_VIEW_ANALYSIS_REPORT;case 8:return WQ_OP_BACKUP_MENU;case 9:return WQ_OP_CLEAR_SCREEN;case 10:return WQ_OP_USER_MENU;case 11:return WQ_OP_EXPORT_USERS;case 0:return WQ_OP_EXIT_SYSTEM;default:return WQ_OP_NONE;}}
 const char *wq_role_to_string(WQUserRole role){ return role==WQ_ROLE_ADMIN?"管理员":(role==WQ_ROLE_USER?"普通用户":(role==WQ_ROLE_GUEST?"访客":"未知角色")); }

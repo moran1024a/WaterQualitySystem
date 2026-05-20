@@ -21,8 +21,18 @@ static int wq_print_time(FILE *fp, const WQDateTime *t)
 int wq_write_overview_report(const char *filename, const DataOverview *overview)
 {
     FILE *fp;
+    const WQParameter filter_params[4] = {WQ_PARAM_TEMP, WQ_PARAM_DO, WQ_PARAM_PH, WQ_PARAM_SALINITY};
+    size_t i;
+    size_t j;
+
     if (filename == NULL || overview == NULL) return WQ_ERROR;
-    if (wq_ensure_directory("output") != WQ_SUCCESS || wq_ensure_directory("output/reports") != WQ_SUCCESS || wq_ensure_directory("output/clean") != WQ_SUCCESS || wq_ensure_directory("backups") != WQ_SUCCESS) return WQ_ERROR;
+    if (wq_ensure_directory("output") != WQ_SUCCESS ||
+        wq_ensure_directory("output/reports") != WQ_SUCCESS ||
+        wq_ensure_directory("output/clean") != WQ_SUCCESS ||
+        wq_ensure_directory(WQ_BACKUP_DIR) != WQ_SUCCESS) {
+        return WQ_ERROR;
+    }
+
     fp = fopen(filename, "w");
     if (fp == NULL) return WQ_ERROR;
 
@@ -37,24 +47,80 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
     fprintf(fp, "修复异常记录数: %lu\n", (unsigned long)overview->fixed_outlier_records);
     fprintf(fp, "删除异常记录数: %lu\n", (unsigned long)overview->deleted_outlier_records);
     fprintf(fp, "异常时间跨度: ");
-    wq_print_time(fp, &overview->first_outlier_time);
-    fprintf(fp, " ~ ");
-    wq_print_time(fp, &overview->last_outlier_time);
+    if (overview->outlier_records > 0U) {
+        wq_print_time(fp, &overview->first_outlier_time);
+        fprintf(fp, " ~ ");
+        wq_print_time(fp, &overview->last_outlier_time);
+    } else {
+        fprintf(fp, "无");
+    }
     fprintf(fp, "\n");
     fprintf(fp, "清洗CSV路径: %s\n清洗二进制路径: %s\n", WQ_CLEAN_CSV_FILE, WQ_CLEAN_BIN_FILE);
 
-    fprintf(fp, "\n[滤波标准差变化]\n");
-    fprintf(fp, "Temp: %.6f -> %.6f (Δ=%.6f)\n", overview->filter_stddev_before[WQ_PARAM_TEMP], overview->filter_stddev_after[WQ_PARAM_TEMP], overview->filter_stddev_delta[WQ_PARAM_TEMP]);
-    fprintf(fp, "DO: %.6f -> %.6f (Δ=%.6f)\n", overview->filter_stddev_before[WQ_PARAM_DO], overview->filter_stddev_after[WQ_PARAM_DO], overview->filter_stddev_delta[WQ_PARAM_DO]);
-    fprintf(fp, "pH: %.6f -> %.6f (Δ=%.6f)\n", overview->filter_stddev_before[WQ_PARAM_PH], overview->filter_stddev_after[WQ_PARAM_PH], overview->filter_stddev_delta[WQ_PARAM_PH]);
-    fprintf(fp, "Salinity: %.6f -> %.6f (Δ=%.6f)\n", overview->filter_stddev_before[WQ_PARAM_SALINITY], overview->filter_stddev_after[WQ_PARAM_SALINITY], overview->filter_stddev_delta[WQ_PARAM_SALINITY]);
+    fprintf(fp, "\n[默认窗口5滤波标准差变化]\n");
+    for (i = 0U; i < 4U; ++i) {
+        WQParameter p = filter_params[i];
+        fprintf(fp, "%s: %.6f -> %.6f (Δ=%.6f)\n",
+                wq_parameter_to_string(p),
+                overview->filter_stddev_before[p],
+                overview->filter_stddev_after[p],
+                overview->filter_stddev_delta[p]);
+    }
 
-    { FILE *f1=fopen(WQ_CLEAN_CSV_FILE,"rb"), *f2=fopen(WQ_CLEAN_BIN_FILE,"rb"); long s1=-1,s2=-1;
-      if(f1){fseek(f1,0,SEEK_END);s1=ftell(f1);fclose(f1);} if(f2){fseek(f2,0,SEEK_END);s2=ftell(f2);fclose(f2);}
-      fprintf(fp,"\n[存储对比数值]\nCSV文件大小: %ld bytes\nBIN文件大小: %ld bytes\nCSV写入时间: N/A\nBIN写入时间: N/A\nCSV读取时间: N/A\nBIN读取时间: N/A\nCSV人类可读: 是\nBIN人类可读: 否\n",s1,s2); }
+    fprintf(fp, "\n[移动平均滤波窗口对比]\n");
+    if (overview->filter_window_comparison_valid) {
+        fprintf(fp, "窗口,参数,滤波前标准差,滤波后标准差,变化值,噪声减少率\n");
+        for (i = 0U; i < WQ_FILTER_WINDOW_COUNT; ++i) {
+            for (j = 0U; j < 4U; ++j) {
+                WQParameter p = filter_params[j];
+                double before = overview->filter_window_stddev_before[i][p];
+                double after = overview->filter_window_stddev_after[i][p];
+                double reduction = before - after;
+                double rate = before > 0.0 ? reduction / before * 100.0 : 0.0;
+                fprintf(fp, "%lu,%s,%.6f,%.6f,%.6f,%.2f%%\n",
+                        (unsigned long)overview->filter_windows[i],
+                        wq_parameter_to_string(p),
+                        before,
+                        after,
+                        overview->filter_window_stddev_delta[i][p],
+                        rate);
+            }
+        }
+        fprintf(fp, "最佳窗口建议: Temp=%lu, DO=%lu, pH=%lu, Salinity=%lu\n",
+                (unsigned long)overview->best_filter_window[WQ_PARAM_TEMP],
+                (unsigned long)overview->best_filter_window[WQ_PARAM_DO],
+                (unsigned long)overview->best_filter_window[WQ_PARAM_PH],
+                (unsigned long)overview->best_filter_window[WQ_PARAM_SALINITY]);
+    } else {
+        fprintf(fp, "尚未执行完整预处理，暂无窗口3/5/7/9/11对比结果。\n");
+    }
 
-    fprintf(fp, "\n[存储格式讨论]\nCSV可读性高，适合人工检查；二进制读写快、体积小，适合系统运行期缓存。\n");
-    fprintf(fp, "实际大小与理论大小差异受字段文本长度、换行与格式化精度影响。\n");
+    fprintf(fp, "\n[CSV与二进制存储性能对比]\n");
+    if (overview->storage_benchmark_valid) {
+        fprintf(fp, "格式,文件大小(bytes),写入时间(s),读取时间(s),人类可读\n");
+        fprintf(fp, "CSV,%lu,%.6f,%.6f,%s\n",
+                overview->csv_storage.file_size_bytes,
+                overview->csv_storage.write_seconds,
+                overview->csv_storage.read_seconds,
+                overview->csv_storage.human_readable ? "是" : "否");
+        fprintf(fp, "BIN,%lu,%.6f,%.6f,%s\n",
+                overview->binary_storage.file_size_bytes,
+                overview->binary_storage.write_seconds,
+                overview->binary_storage.read_seconds,
+                overview->binary_storage.human_readable ? "是" : "否");
+    } else {
+        fprintf(fp, "尚未执行存储性能对比。完成预处理或保存后会自动生成。\n");
+    }
+
+    fprintf(fp, "\n[存储格式讨论]\n");
+    fprintf(fp, "CSV文本适合人工查看、跨软件交换和调试；二进制适合程序内部快速加载、随机读取和长期批量处理。\n");
+    fprintf(fp, "实际文件大小与理论原始数据大小不同，主要因为CSV包含分隔符、换行、十进制文本、小数位格式化，二进制则包含结构体字段、布尔标记、时间字段和可能的内存对齐填充。\n");
+
+    fprintf(fp, "\n[异常值处理讨论]\n");
+    fprintf(fp, "本系统按任务书范围阈值识别异常；单条异常字段数达到3个及以上时删除整条记录，少于3个时转为缺失值并用前后邻域均值填补。该方法实现简单、可解释，适合课程设计和规则明确的数据清洗，但对真实生产中的季节性突变、传感器漂移和连续异常仍需结合专业阈值与人工复核。\n");
+
+    fprintf(fp, "\n[滤波窗口讨论]\n");
+    fprintf(fp, "移动平均窗口越大，短期波动抑制通常越强，标准差一般下降更多；但窗口过大会削弱突发水质变化信号，导致预警滞后。因此本系统默认使用窗口5作为清洗输出，同时报告窗口3/5/7/9/11的标准差对比，便于根据噪声抑制和突变保留之间的平衡选择窗口。\n");
 
     return (fclose(fp) == 0) ? WQ_SUCCESS : WQ_ERROR;
 }

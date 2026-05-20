@@ -17,6 +17,6 @@ msvc:
 
 clean:
 	-rm -f $(PROJECT) $(PROJECT).exe *.o *.obj
-	-del /Q $(PROJECT).exe *.obj 2>NUL
+	-rm -f NUL
 
 .PHONY: all gcc msvc clean

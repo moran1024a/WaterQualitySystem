@@ -336,6 +336,57 @@ int wq_filter_main_parameters(const WaterQualityDataset *src,
     return WQ_SUCCESS;
 }
 
+static int wq_compare_filter_windows(const WaterQualityDataset *dataset, DataOverview *overview)
+{
+    const size_t windows[WQ_FILTER_WINDOW_COUNT] = {3U, 5U, 7U, 9U, 11U};
+    const WQParameter params[4] = {WQ_PARAM_TEMP, WQ_PARAM_DO, WQ_PARAM_PH, WQ_PARAM_SALINITY};
+    size_t wi;
+    size_t pi;
+
+    if (dataset == NULL || overview == NULL) {
+        return WQ_ERROR;
+    }
+
+    for (wi = 0U; wi < WQ_FILTER_WINDOW_COUNT; ++wi) {
+        WaterQualityDataset *filtered = wq_dataset_create(dataset->size);
+        if (filtered == NULL) {
+            return WQ_ERROR;
+        }
+        if (wq_filter_main_parameters(dataset, filtered, windows[wi]) != WQ_SUCCESS) {
+            wq_dataset_destroy(filtered);
+            return WQ_ERROR;
+        }
+
+        overview->filter_windows[wi] = windows[wi];
+        for (pi = 0U; pi < 4U; ++pi) {
+            WQParameter p = params[pi];
+            double before = wq_compute_stddev_parameter(dataset, p);
+            double after = wq_compute_stddev_parameter(filtered, p);
+            overview->filter_window_stddev_before[wi][p] = before;
+            overview->filter_window_stddev_after[wi][p] = after;
+            overview->filter_window_stddev_delta[wi][p] = after - before;
+        }
+        wq_dataset_destroy(filtered);
+    }
+
+    for (pi = 0U; pi < 4U; ++pi) {
+        WQParameter p = params[pi];
+        double best_reduction = overview->filter_window_stddev_before[0][p] - overview->filter_window_stddev_after[0][p];
+        size_t best_window = overview->filter_windows[0];
+        for (wi = 1U; wi < WQ_FILTER_WINDOW_COUNT; ++wi) {
+            double reduction = overview->filter_window_stddev_before[wi][p] - overview->filter_window_stddev_after[wi][p];
+            if (reduction > best_reduction) {
+                best_reduction = reduction;
+                best_window = overview->filter_windows[wi];
+            }
+        }
+        overview->best_filter_window[p] = best_window;
+    }
+
+    overview->filter_window_comparison_valid = true;
+    return WQ_SUCCESS;
+}
+
 int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
 {
     WaterQualityDataset *filtered;
@@ -352,6 +403,10 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
         return WQ_ERROR;
     }
     if (wq_fill_missing_values(dataset, 10U, 10U, overview) != WQ_SUCCESS) {
+        return WQ_ERROR;
+    }
+
+    if (wq_compare_filter_windows(dataset, overview) != WQ_SUCCESS) {
         return WQ_ERROR;
     }
 
@@ -393,6 +448,14 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
     }
     if (wq_write_binary(WQ_CLEAN_BIN_FILE, dataset) != WQ_SUCCESS) {
         return WQ_ERROR;
+    }
+
+    if (wq_compare_storage_formats(dataset,
+                                   WQ_CLEAN_CSV_FILE,
+                                   WQ_CLEAN_BIN_FILE,
+                                   &overview->csv_storage,
+                                   &overview->binary_storage) == WQ_SUCCESS) {
+        overview->storage_benchmark_valid = true;
     }
 
     return WQ_SUCCESS;

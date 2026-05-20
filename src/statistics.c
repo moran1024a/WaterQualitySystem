@@ -176,9 +176,9 @@ int wq_analyze_dawn_hypoxia(const WaterQualityDataset *dataset,
             if (day_n > 0U && count < max_warnings) {
                 double m = day_sum / (double)day_n;
                 if (m < WQ_DO_SEVERE_HYPOXIA_LIMIT) {
-                    wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_SEVERE_HYPOXIA, "凌晨DO均值低于3.0mg/L", "立即增氧并减少投喂");
+                    wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_SEVERE_HYPOXIA, "凌晨DO均值低于3.0mg/L", "需立即投放颗粒氧并减少投喂");
                 } else if (m < WQ_DO_MILD_HYPOXIA_LIMIT) {
-                    wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_MILD_HYPOXIA, "凌晨DO均值低于4.0mg/L", "加强巡塘并预增氧");
+                    wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_MILD_HYPOXIA, "凌晨DO均值低于4.0mg/L", "建议开启底部增氧机");
                 }
             }
             cur_y = r->time.year; cur_m = r->time.month; cur_d = r->time.day; cur_time = r->time;
@@ -193,9 +193,9 @@ int wq_analyze_dawn_hypoxia(const WaterQualityDataset *dataset,
     if (day_n > 0U && count < max_warnings) {
         double m = day_sum / (double)day_n;
         if (m < WQ_DO_SEVERE_HYPOXIA_LIMIT) {
-            wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_SEVERE_HYPOXIA, "凌晨DO均值低于3.0mg/L", "立即增氧并减少投喂");
+            wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_SEVERE_HYPOXIA, "凌晨DO均值低于3.0mg/L", "需立即投放颗粒氧并减少投喂");
         } else if (m < WQ_DO_MILD_HYPOXIA_LIMIT) {
-            wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_MILD_HYPOXIA, "凌晨DO均值低于4.0mg/L", "加强巡塘并预增氧");
+            wq_fill_warning(&warnings[count++], &cur_time, WQ_WARNING_MILD_HYPOXIA, "凌晨DO均值低于4.0mg/L", "建议开启底部增氧机");
         }
     }
 
@@ -219,14 +219,14 @@ int wq_analyze_salinity_mutation(const WaterQualityDataset *dataset,
         if (i >= WQ_HOUR_RECORDS && count < max_warnings && wq_valid_value(&dataset->records[i - WQ_HOUR_RECORDS], WQ_PARAM_SALINITY)) {
             double drop1h = dataset->records[i - WQ_HOUR_RECORDS].value[WQ_PARAM_SALINITY] - r->value[WQ_PARAM_SALINITY];
             if (drop1h > WQ_SALINITY_HOUR_DROP_LIMIT) {
-                wq_fill_warning(&warnings[count++], &r->time, WQ_WARNING_SALINITY_MUTATION, "1小时盐度下降超过2 PSU", "检查淡水入侵并缓慢调盐");
+                wq_fill_warning(&warnings[count++], &r->time, WQ_WARNING_SALINITY_MUTATION, "1小时盐度下降超过2 PSU", "立即关闭进水口，并泼洒高稳VC或葡萄糖以增强抗应激能力");
             }
         }
 
         if (i >= WQ_DAY_RECORDS && count < max_warnings && wq_valid_value(&dataset->records[i - WQ_DAY_RECORDS], WQ_PARAM_SALINITY)) {
             double drop24h = dataset->records[i - WQ_DAY_RECORDS].value[WQ_PARAM_SALINITY] - r->value[WQ_PARAM_SALINITY];
             if (drop24h > WQ_SALINITY_DAY_DROP_LIMIT) {
-                wq_fill_warning(&warnings[count++], &r->time, WQ_WARNING_SALINITY_MUTATION, "24小时盐度累计下降超过5 PSU", "分阶段补盐并复核传感器");
+                wq_fill_warning(&warnings[count++], &r->time, WQ_WARNING_SALINITY_MUTATION, "24小时盐度累计下降超过5 PSU", "立即关闭进水口，并泼洒高稳VC或葡萄糖以增强抗应激能力");
             }
         }
     }
