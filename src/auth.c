@@ -376,6 +376,11 @@ bool wq_role_can_execute(WQUserRole role, WQOperation operation)
 
     if (role == WQ_ROLE_USER) {
         switch (operation) {
+        case WQ_OP_DATA_MENU:
+        case WQ_OP_PREPROCESS_MENU:
+        case WQ_OP_STATISTICS_MENU:
+        case WQ_OP_PREDICTION_MENU:
+        case WQ_OP_BACKUP_MENU:
         case WQ_OP_LOAD_DATA:
         case WQ_OP_SAVE_DATA:
         case WQ_OP_BROWSE_DATA:
@@ -398,6 +403,7 @@ bool wq_role_can_execute(WQUserRole role, WQOperation operation)
 
     if (role == WQ_ROLE_GUEST) {
         switch (operation) {
+        case WQ_OP_STATISTICS_MENU:
         case WQ_OP_STATISTICS_ANALYSIS:
         case WQ_OP_VIEW_OVERVIEW:
         case WQ_OP_VIEW_ANALYSIS_REPORT:
@@ -429,13 +435,13 @@ WQOperation wq_main_menu_option_to_operation(int menu_option)
 {
     switch (menu_option) {
     case 1:
-        return WQ_OP_BROWSE_DATA;
+        return WQ_OP_DATA_MENU;
     case 2:
-        return WQ_OP_PREPROCESS_DATA;
+        return WQ_OP_PREPROCESS_MENU;
     case 3:
-        return WQ_OP_STATISTICS_ANALYSIS;
+        return WQ_OP_STATISTICS_MENU;
     case 4:
-        return WQ_OP_PREDICTION_ANALYSIS;
+        return WQ_OP_PREDICTION_MENU;
     case 5:
         return WQ_OP_VIEW_OVERVIEW;
     case 6:
@@ -443,11 +449,11 @@ WQOperation wq_main_menu_option_to_operation(int menu_option)
     case 7:
         return WQ_OP_VIEW_ANALYSIS_REPORT;
     case 8:
-        return WQ_OP_BACKUP_DATA;
+        return WQ_OP_BACKUP_MENU;
     case 9:
         return WQ_OP_CLEAR_SCREEN;
     case 10:
-        return WQ_OP_CREATE_USER;
+        return WQ_OP_USER_MENU;
     case 11:
         return WQ_OP_EXPORT_USERS;
     case 0:
@@ -474,6 +480,18 @@ const char *wq_role_to_string(WQUserRole role)
 const char *wq_operation_to_string(WQOperation operation)
 {
     switch (operation) {
+    case WQ_OP_DATA_MENU:
+        return "进入数据基础操作菜单";
+    case WQ_OP_PREPROCESS_MENU:
+        return "进入数据预处理菜单";
+    case WQ_OP_STATISTICS_MENU:
+        return "进入统计分析菜单";
+    case WQ_OP_PREDICTION_MENU:
+        return "进入预测分析菜单";
+    case WQ_OP_BACKUP_MENU:
+        return "进入备份与恢复菜单";
+    case WQ_OP_USER_MENU:
+        return "进入用户管理菜单";
     case WQ_OP_CREATE_USER:
         return "创建用户";
     case WQ_OP_EXPORT_USERS:

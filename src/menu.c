@@ -8,7 +8,7 @@
  * menu.c
  *
  * 系统菜单模块函数框架。
- * 约定：所有操作都通过 WQOperation 进行鉴权，不只依赖“菜单是否显示”。
+ * 约定：主菜单入口和具体业务操作都通过 WQOperation 进行鉴权，不只依赖“菜单是否显示”。
  */
 
 void wq_show_main_menu(WQUserRole role)

@@ -75,7 +75,15 @@ typedef enum WQOperation {
     WQ_OP_LOAD_USERS,
     WQ_OP_SAVE_USERS,
 
-    /* 数据基础操作 */
+    /* 主菜单/子菜单入口。菜单入口只表示进入某类功能，不等同于执行具体业务。 */
+    WQ_OP_DATA_MENU,
+    WQ_OP_PREPROCESS_MENU,
+    WQ_OP_STATISTICS_MENU,
+    WQ_OP_PREDICTION_MENU,
+    WQ_OP_BACKUP_MENU,
+    WQ_OP_USER_MENU,
+
+    /* 数据基础具体操作 */
     WQ_OP_LOAD_DATA,
     WQ_OP_SAVE_DATA,
     WQ_OP_BROWSE_DATA,
@@ -190,6 +198,23 @@ typedef struct StorageBenchmark {
     double read_seconds;
     bool human_readable;
 } StorageBenchmark;
+
+/* 分析讨论主题。用于将任务书要求的讨论性结论统一写入报告。 */
+typedef enum WQDiscussionTopic {
+    WQ_DISCUSSION_STORAGE_FORMAT = 0,       /* CSV 与二进制存储场景、空间/时间差异 */
+    WQ_DISCUSSION_OUTLIER_PROCESSING,       /* 异常值处理方法及合理性 */
+    WQ_DISCUSSION_FILTER_WINDOW,            /* 滤波窗口与噪声抑制关系 */
+    WQ_DISCUSSION_CORRELATION,              /* 相关性矩阵结论 */
+    WQ_DISCUSSION_REGRESSION_ACCURACY,      /* 单因素线性回归准确度与局限 */
+    WQ_DISCUSSION_CUSTOM                    /* 其他补充讨论 */
+} WQDiscussionTopic;
+
+/* 报告中的讨论段落。content 由统计、预处理、预测等模块准备，report 模块只负责输出。 */
+typedef struct AnalysisDiscussion {
+    WQDiscussionTopic topic;
+    char title[WQ_MAX_DISCUSSION_TITLE_LENGTH];
+    char content[WQ_MAX_DISCUSSION_TEXT_LENGTH];
+} AnalysisDiscussion;
 
 /*
  * 运行期账户。

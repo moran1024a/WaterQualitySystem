@@ -13,7 +13,7 @@
 #define WQ_VERSION "1.1"
 
 /* 默认输入输出路径 */
-#define WQ_DEFAULT_DATA_FILE "data/data.csv"
+#define WQ_DEFAULT_DATA_FILE "data/data_modify.csv"
 #define WQ_CLEAN_CSV_FILE "output/clean_data.csv"
 #define WQ_CLEAN_BIN_FILE "output/clean_data.bin"
 #define WQ_OVERVIEW_FILE "output/data_overview.txt"
@@ -39,6 +39,8 @@
 #define WQ_MAX_LINE_LENGTH 512U
 #define WQ_MAX_PATH_LENGTH 260U
 #define WQ_MAX_BACKUP_FILES 128U
+#define WQ_MAX_DISCUSSION_TITLE_LENGTH 64U
+#define WQ_MAX_DISCUSSION_TEXT_LENGTH 1024U
 
 /* 用户账户长度限制 */
 #define WQ_MAX_USERS 128U
