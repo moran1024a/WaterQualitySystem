@@ -14,24 +14,27 @@
  */
 
 /* 水质参数编号。枚举值同时作为 value[] 和 missing[] 的下标。 */
-typedef enum WQParameter {
-    WQ_PARAM_TEMP = 0,          /* 水温 Temp，单位：℃ */
-    WQ_PARAM_SALINITY,          /* 盐度 Salinity，单位：PSU */
-    WQ_PARAM_PH,                /* pH 值 */
-    WQ_PARAM_DO,                /* 溶解氧 DO，单位：mg/L */
-    WQ_PARAM_PRECIPITATION,     /* 降水量 precipitation，单位：m */
-    WQ_PARAM_AIR_TEMP,          /* 气温 Air_temp，单位：℃ */
-    WQ_PARAM_COUNT              /* 参数总数，固定为 6 */
+typedef enum WQParameter
+{
+    WQ_PARAM_TEMP = 0,      /* 水温 Temp，单位：℃ */
+    WQ_PARAM_SALINITY,      /* 盐度 Salinity，单位：PSU */
+    WQ_PARAM_PH,            /* pH 值 */
+    WQ_PARAM_DO,            /* 溶解氧 DO，单位：mg/L */
+    WQ_PARAM_PRECIPITATION, /* 降水量 precipitation，单位：m */
+    WQ_PARAM_AIR_TEMP,      /* 气温 Air_temp，单位：℃ */
+    WQ_PARAM_COUNT          /* 参数总数，固定为 6 */
 } WQParameter;
 
 /* 排序方向 */
-typedef enum WQSortOrder {
+typedef enum WQSortOrder
+{
     WQ_SORT_ASC = 0,
     WQ_SORT_DESC
 } WQSortOrder;
 
 /* 数据存储格式 */
-typedef enum WQStorageFormat {
+typedef enum WQStorageFormat
+{
     WQ_STORAGE_CSV = 0,
     WQ_STORAGE_BINARY
 } WQStorageFormat;
@@ -42,20 +45,23 @@ typedef enum WQStorageFormat {
  * 普通用户：可进行数据读取、浏览、预处理、统计、预测和查看报告。
  * 访客：只允许查看数据概览和统计分析类报告。
  */
-typedef enum WQUserRole {
+typedef enum WQUserRole
+{
     WQ_ROLE_ADMIN = 0,
     WQ_ROLE_USER,
     WQ_ROLE_GUEST
 } WQUserRole;
 
 /* 用户来源。默认账户不写入用户二进制文件，创建账户需要加密落盘。 */
-typedef enum WQUserSource {
+typedef enum WQUserSource
+{
     WQ_USER_SOURCE_BUILTIN = 0,
     WQ_USER_SOURCE_CREATED
 } WQUserSource;
 
 /* 账户状态。当前不提供修改用户信息功能，预留禁用状态便于扩展。 */
-typedef enum WQUserStatus {
+typedef enum WQUserStatus
+{
     WQ_USER_STATUS_ACTIVE = 0,
     WQ_USER_STATUS_DISABLED
 } WQUserStatus;
@@ -64,7 +70,8 @@ typedef enum WQUserStatus {
  * 操作级权限枚举。
  * 所有菜单项和关键业务函数调用前都应映射到一个 WQOperation，再统一调用 auth 模块鉴权。
  */
-typedef enum WQOperation {
+typedef enum WQOperation
+{
     WQ_OP_NONE = 0,
 
     /* 系统与账户 */
@@ -110,7 +117,8 @@ typedef enum WQOperation {
 } WQOperation;
 
 /* 预警类型 */
-typedef enum WQWarningType {
+typedef enum WQWarningType
+{
     WQ_WARNING_NONE = 0,
     WQ_WARNING_MILD_HYPOXIA,
     WQ_WARNING_SEVERE_HYPOXIA,
@@ -118,7 +126,8 @@ typedef enum WQWarningType {
 } WQWarningType;
 
 /* 简化时间结构。 */
-typedef struct WQDateTime {
+typedef struct WQDateTime
+{
     int year;
     int month;
     int day;
@@ -127,7 +136,8 @@ typedef struct WQDateTime {
 } WQDateTime;
 
 /* 单条水质记录。 */
-typedef struct WaterQualityRecord {
+typedef struct WaterQualityRecord
+{
     size_t index;
     WQDateTime time;
     double value[WQ_PARAM_COUNT];
@@ -136,14 +146,16 @@ typedef struct WaterQualityRecord {
 } WaterQualityRecord;
 
 /* 动态数据集。 */
-typedef struct WaterQualityDataset {
+typedef struct WaterQualityDataset
+{
     WaterQualityRecord *records;
     size_t size;
     size_t capacity;
 } WaterQualityDataset;
 
 /* CSV 与二进制存储性能对比结果 */
-typedef struct StorageBenchmark {
+typedef struct StorageBenchmark
+{
     WQStorageFormat format;
     unsigned long file_size_bytes;
     double write_seconds;
@@ -152,7 +164,8 @@ typedef struct StorageBenchmark {
 } StorageBenchmark;
 
 /* 数据概览统计。 */
-typedef struct DataOverview {
+typedef struct DataOverview
+{
     size_t total_records;
     size_t valid_records;
     size_t invalid_records;
@@ -181,7 +194,8 @@ typedef struct DataOverview {
 } DataOverview;
 
 /* 单个参数的基本统计量 */
-typedef struct ParameterStatistics {
+typedef struct ParameterStatistics
+{
     double mean;
     double max;
     double min;
@@ -190,13 +204,15 @@ typedef struct ParameterStatistics {
 } ParameterStatistics;
 
 /* 统计分析总结果 */
-typedef struct StatisticsResult {
+typedef struct StatisticsResult
+{
     ParameterStatistics parameter_stats[WQ_PARAM_COUNT];
     double correlation_matrix[WQ_PARAM_COUNT][WQ_PARAM_COUNT];
 } StatisticsResult;
 
 /* 预警记录 */
-typedef struct WarningRecord {
+typedef struct WarningRecord
+{
     WQDateTime time;
     WQWarningType type;
     char message[128];
@@ -204,7 +220,8 @@ typedef struct WarningRecord {
 } WarningRecord;
 
 /* 单因素线性回归模型：y = slope * x + intercept */
-typedef struct LinearRegressionModel {
+typedef struct LinearRegressionModel
+{
     WQParameter x_param;
     WQParameter y_param;
     double slope;
@@ -214,17 +231,19 @@ typedef struct LinearRegressionModel {
 } LinearRegressionModel;
 
 /* 分析讨论主题。用于将任务书要求的讨论性结论统一写入报告。 */
-typedef enum WQDiscussionTopic {
-    WQ_DISCUSSION_STORAGE_FORMAT = 0,       /* CSV 与二进制存储场景、空间/时间差异 */
-    WQ_DISCUSSION_OUTLIER_PROCESSING,       /* 异常值处理方法及合理性 */
-    WQ_DISCUSSION_FILTER_WINDOW,            /* 滤波窗口与噪声抑制关系 */
-    WQ_DISCUSSION_CORRELATION,              /* 相关性矩阵结论 */
-    WQ_DISCUSSION_REGRESSION_ACCURACY,      /* 单因素线性回归准确度与局限 */
-    WQ_DISCUSSION_CUSTOM                    /* 其他补充讨论 */
+typedef enum WQDiscussionTopic
+{
+    WQ_DISCUSSION_STORAGE_FORMAT = 0,  /* CSV 与二进制存储场景、空间/时间差异 */
+    WQ_DISCUSSION_OUTLIER_PROCESSING,  /* 异常值处理方法及合理性 */
+    WQ_DISCUSSION_FILTER_WINDOW,       /* 滤波窗口与噪声抑制关系 */
+    WQ_DISCUSSION_CORRELATION,         /* 相关性矩阵结论 */
+    WQ_DISCUSSION_REGRESSION_ACCURACY, /* 单因素线性回归准确度与局限 */
+    WQ_DISCUSSION_CUSTOM               /* 其他补充讨论 */
 } WQDiscussionTopic;
 
 /* 报告中的讨论段落。content 由统计、预处理、预测等模块准备，report 模块只负责输出。 */
-typedef struct AnalysisDiscussion {
+typedef struct AnalysisDiscussion
+{
     WQDiscussionTopic topic;
     char title[WQ_MAX_DISCUSSION_TITLE_LENGTH];
     char content[WQ_MAX_DISCUSSION_TEXT_LENGTH];
@@ -235,7 +254,8 @@ typedef struct AnalysisDiscussion {
  * password_hash 保存“明文密码 + salt”计算后的 MD5 十六进制结果。
  * 默认账户可在初始化时计算散列，也可由验证函数单独处理；创建账户必须保存散列值。
  */
-typedef struct UserAccount {
+typedef struct UserAccount
+{
     char username[WQ_MAX_USERNAME_LENGTH];
     char password_hash[WQ_MAX_PASSWORD_HASH_LENGTH];
     unsigned char salt[WQ_SALT_LENGTH];
@@ -245,21 +265,24 @@ typedef struct UserAccount {
 } UserAccount;
 
 /* 用户动态表。程序启动时由默认账户 + users.dat 共同组成。 */
-typedef struct UserStore {
+typedef struct UserStore
+{
     UserAccount *users;
     size_t count;
     size_t capacity;
 } UserStore;
 
 /* 用户二进制文件头。用于校验文件格式、版本和记录数量。 */
-typedef struct UserFileHeader {
+typedef struct UserFileHeader
+{
     char magic[8];
     uint32_t version;
     uint32_t count;
 } UserFileHeader;
 
 /* 用户二进制文件中的单条记录。只保存创建账户，不保存明文密码。 */
-typedef struct UserFileRecord {
+typedef struct UserFileRecord
+{
     char username[WQ_MAX_USERNAME_LENGTH];
     char password_hash[WQ_MAX_PASSWORD_HASH_LENGTH];
     unsigned char salt[WQ_SALT_LENGTH];
@@ -268,7 +291,8 @@ typedef struct UserFileRecord {
 } UserFileRecord;
 
 /* 系统运行上下文。菜单层通过该结构统一传递数据、登录用户和用户表。 */
-typedef struct SystemContext {
+typedef struct SystemContext
+{
     WaterQualityDataset *dataset;
     DataOverview overview;
     StatisticsResult statistics;

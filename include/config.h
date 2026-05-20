@@ -48,9 +48,9 @@
 #define WQ_DEFAULT_USER_COUNT 2U
 #define WQ_MAX_USERNAME_LENGTH 32U
 #define WQ_MAX_PASSWORD_LENGTH 64U
-#define WQ_MAX_PASSWORD_HASH_LENGTH 33U      /* MD5 十六进制字符串：32位 + '\0' */
-#define WQ_SALT_LENGTH 16U                   /* 盐值原始字节数 */
-#define WQ_SALT_HEX_LENGTH 33U               /* 盐值十六进制字符串：32位 + '\0' */
+#define WQ_MAX_PASSWORD_HASH_LENGTH 33U /* MD5 十六进制字符串：32位 + '\0' */
+#define WQ_SALT_LENGTH 16U              /* 盐值原始字节数 */
+#define WQ_SALT_HEX_LENGTH 33U          /* 盐值十六进制字符串：32位 + '\0' */
 #define WQ_MAX_LOGIN_ATTEMPTS 3U
 
 /* 缺失值标记。CSV 空字段和 NaN 文本由解析函数单独判断。 */

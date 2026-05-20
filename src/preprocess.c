@@ -5,14 +5,15 @@
 #include <string.h>
 #include <math.h>
 
-
 static double wq_sqrt_local(double x)
 {
     double g;
     int i;
-    if (x <= 0.0) return 0.0;
+    if (x <= 0.0)
+        return 0.0;
     g = x > 1.0 ? x : 1.0;
-    for (i = 0; i < 20; ++i) g = 0.5 * (g + x / g);
+    for (i = 0; i < 20; ++i)
+        g = 0.5 * (g + x / g);
     return g;
 }
 
@@ -20,14 +21,17 @@ static double wq_compute_stddev_parameter(const WaterQualityDataset *dataset, WQ
 {
     size_t i, n = 0U;
     double sum = 0.0, sq = 0.0;
-    for (i = 0U; i < dataset->size; ++i) {
+    for (i = 0U; i < dataset->size; ++i)
+    {
         const WaterQualityRecord *r = &dataset->records[i];
-        if (!r->valid || r->missing[(size_t)p] || isnan(r->value[(size_t)p])) continue;
+        if (!r->valid || r->missing[(size_t)p] || isnan(r->value[(size_t)p]))
+            continue;
         sum += r->value[(size_t)p];
         sq += r->value[(size_t)p] * r->value[(size_t)p];
         n++;
     }
-    if (n < 2U) return 0.0;
+    if (n < 2U)
+        return 0.0;
     return wq_sqrt_local((sq / (double)n) - (sum / (double)n) * (sum / (double)n));
 }
 
@@ -42,9 +46,11 @@ static double wq_compute_parameter_global_mean(const WaterQualityDataset *datase
     size_t i;
     size_t count = 0U;
     double sum = 0.0;
-    for (i = 0U; i < dataset->size; ++i) {
+    for (i = 0U; i < dataset->size; ++i)
+    {
         const WaterQualityRecord *r = &dataset->records[i];
-        if (r->valid && !r->missing[(size_t)parameter]) {
+        if (r->valid && !r->missing[(size_t)parameter])
+        {
             sum += r->value[(size_t)parameter];
             count++;
         }
@@ -63,26 +69,34 @@ static double wq_neighbor_mean(const WaterQualityDataset *dataset,
     double sum = 0.0;
     size_t i;
 
-    if (count_out == NULL) {
+    if (count_out == NULL)
+    {
         return 0.0;
     }
 
-    if (backward) {
+    if (backward)
+    {
         i = index;
-        while (i > 0U && found < limit) {
+        while (i > 0U && found < limit)
+        {
             const WaterQualityRecord *r;
             i--;
             r = &dataset->records[i];
-            if (r->valid && !r->missing[(size_t)parameter]) {
+            if (r->valid && !r->missing[(size_t)parameter])
+            {
                 sum += r->value[(size_t)parameter];
                 found++;
             }
         }
-    } else {
+    }
+    else
+    {
         i = index + 1U;
-        while (i < dataset->size && found < limit) {
+        while (i < dataset->size && found < limit)
+        {
             const WaterQualityRecord *r = &dataset->records[i];
-            if (r->valid && !r->missing[(size_t)parameter]) {
+            if (r->valid && !r->missing[(size_t)parameter])
+            {
                 sum += r->value[(size_t)parameter];
                 found++;
             }
@@ -105,16 +119,19 @@ bool wq_is_missing_text(const char *text)
 {
     char buf[WQ_MAX_LINE_LENGTH];
     size_t i;
-    if (text == NULL) {
+    if (text == NULL)
+    {
         return true;
     }
     strncpy(buf, text, sizeof(buf) - 1U);
     buf[sizeof(buf) - 1U] = '\0';
     wq_trim(buf);
-    if (buf[0] == '\0') {
+    if (buf[0] == '\0')
+    {
         return true;
     }
-    for (i = 0U; buf[i] != '\0'; ++i) {
+    for (i = 0U; buf[i] != '\0'; ++i)
+    {
         buf[i] = (char)tolower((unsigned char)buf[i]);
     }
     return (strcmp(buf, "nan") == 0);
@@ -136,13 +153,16 @@ size_t wq_count_record_outliers(const WaterQualityRecord *record)
     size_t count;
     size_t i;
 
-    if (record == NULL) {
+    if (record == NULL)
+    {
         return 0U;
     }
 
     count = 0U;
-    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i) {
-        if (!record->missing[i] && !wq_is_value_in_range((WQParameter)i, record->value[i])) {
+    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i)
+    {
+        if (!record->missing[i] && !wq_is_value_in_range((WQParameter)i, record->value[i]))
+        {
             count++;
         }
     }
@@ -155,7 +175,8 @@ int wq_detect_outliers(const WaterQualityDataset *dataset, DataOverview *overvie
     size_t i;
     bool has_outlier = false;
 
-    if (dataset == NULL || overview == NULL) {
+    if (dataset == NULL || overview == NULL)
+    {
         return WQ_ERROR;
     }
 
@@ -165,20 +186,26 @@ int wq_detect_outliers(const WaterQualityDataset *dataset, DataOverview *overvie
     overview->outlier_records = 0U;
     overview->outlier_parameter_count = 0U;
 
-    for (i = 0U; i < dataset->size; ++i) {
+    for (i = 0U; i < dataset->size; ++i)
+    {
         size_t outlier_count;
         const WaterQualityRecord *r = &dataset->records[i];
-        if (r->valid) {
+        if (r->valid)
+        {
             overview->valid_records++;
-        } else {
+        }
+        else
+        {
             overview->invalid_records++;
         }
 
         outlier_count = wq_count_record_outliers(r);
-        if (outlier_count > 0U) {
+        if (outlier_count > 0U)
+        {
             overview->outlier_records++;
             overview->outlier_parameter_count += outlier_count;
-            if (!has_outlier) {
+            if (!has_outlier)
+            {
                 overview->first_outlier_time = r->time;
                 has_outlier = true;
             }
@@ -192,18 +219,22 @@ int wq_process_outliers(WaterQualityDataset *dataset, DataOverview *overview)
 {
     size_t i = 0U;
 
-    if (dataset == NULL || overview == NULL) {
+    if (dataset == NULL || overview == NULL)
+    {
         return WQ_ERROR;
     }
 
     overview->fixed_outlier_records = 0U;
     overview->deleted_outlier_records = 0U;
 
-    while (i < dataset->size) {
+    while (i < dataset->size)
+    {
         size_t j;
         size_t outlier_count = wq_count_record_outliers(&dataset->records[i]);
-        if (outlier_count >= 3U) {
-            for (j = i + 1U; j < dataset->size; ++j) {
+        if (outlier_count >= 3U)
+        {
+            for (j = i + 1U; j < dataset->size; ++j)
+            {
                 dataset->records[j - 1U] = dataset->records[j];
             }
             dataset->size--;
@@ -211,10 +242,13 @@ int wq_process_outliers(WaterQualityDataset *dataset, DataOverview *overview)
             continue;
         }
 
-        if (outlier_count > 0U) {
-            for (j = 0U; j < (size_t)WQ_PARAM_COUNT; ++j) {
+        if (outlier_count > 0U)
+        {
+            for (j = 0U; j < (size_t)WQ_PARAM_COUNT; ++j)
+            {
                 if (!dataset->records[i].missing[j] &&
-                    !wq_is_value_in_range((WQParameter)j, dataset->records[i].value[j])) {
+                    !wq_is_value_in_range((WQParameter)j, dataset->records[i].value[j]))
+                {
                     dataset->records[i].missing[j] = true;
                     overview->missing_values++;
                 }
@@ -236,32 +270,45 @@ int wq_fill_missing_values(WaterQualityDataset *dataset,
     size_t p;
     double global_mean[WQ_PARAM_COUNT];
 
-    if (dataset == NULL || overview == NULL || before_n == 0U || after_m == 0U) {
+    if (dataset == NULL || overview == NULL || before_n == 0U || after_m == 0U)
+    {
         return WQ_ERROR;
     }
 
-    for (p = 0U; p < (size_t)WQ_PARAM_COUNT; ++p) {
+    for (p = 0U; p < (size_t)WQ_PARAM_COUNT; ++p)
+    {
         global_mean[p] = wq_compute_parameter_global_mean(dataset, (WQParameter)p);
     }
 
-    for (i = 0U; i < dataset->size; ++i) {
+    for (i = 0U; i < dataset->size; ++i)
+    {
         WaterQualityRecord *r = &dataset->records[i];
-        if (!r->valid) {
+        if (!r->valid)
+        {
             continue;
         }
-        for (p = 0U; p < (size_t)WQ_PARAM_COUNT; ++p) {
-            if (r->missing[p]) {
+        for (p = 0U; p < (size_t)WQ_PARAM_COUNT; ++p)
+        {
+            if (r->missing[p])
+            {
                 size_t lc = 0U;
                 size_t rc = 0U;
                 double lv = wq_neighbor_mean(dataset, i, (WQParameter)p, before_n, true, &lc);
                 double rv = wq_neighbor_mean(dataset, i, (WQParameter)p, after_m, false, &rc);
-                if (lc > 0U && rc > 0U) {
+                if (lc > 0U && rc > 0U)
+                {
                     r->value[p] = (lv + rv) / 2.0;
-                } else if (lc > 0U) {
+                }
+                else if (lc > 0U)
+                {
                     r->value[p] = lv;
-                } else if (rc > 0U) {
+                }
+                else if (rc > 0U)
+                {
                     r->value[p] = rv;
-                } else {
+                }
+                else
+                {
                     r->value[p] = global_mean[p];
                 }
                 r->missing[p] = false;
@@ -280,33 +327,40 @@ int wq_moving_average_filter(const WaterQualityDataset *src,
     size_t i;
     size_t half;
 
-    if (src == NULL || dst == NULL || !wq_is_filter_window_valid(window_size)) {
+    if (src == NULL || dst == NULL || !wq_is_filter_window_valid(window_size))
+    {
         return WQ_ERROR;
     }
-    if (src->size != dst->size) {
+    if (src->size != dst->size)
+    {
         return WQ_ERROR;
     }
 
     half = window_size / 2U;
-    for (i = 0U; i < src->size; ++i) {
+    for (i = 0U; i < src->size; ++i)
+    {
         size_t begin = (i > half) ? (i - half) : 0U;
         size_t end = i + half;
         size_t k;
         size_t count = 0U;
         double sum = 0.0;
 
-        if (end >= src->size) {
+        if (end >= src->size)
+        {
             end = src->size - 1U;
         }
 
-        for (k = begin; k <= end; ++k) {
-            if (src->records[k].valid && !src->records[k].missing[(size_t)parameter]) {
+        for (k = begin; k <= end; ++k)
+        {
+            if (src->records[k].valid && !src->records[k].missing[(size_t)parameter])
+            {
                 sum += src->records[k].value[(size_t)parameter];
                 count++;
             }
         }
 
-        if (count > 0U) {
+        if (count > 0U)
+        {
             dst->records[i].value[(size_t)parameter] = sum / (double)count;
             dst->records[i].missing[(size_t)parameter] = false;
         }
@@ -318,20 +372,26 @@ int wq_filter_main_parameters(const WaterQualityDataset *src,
                               WaterQualityDataset *dst,
                               size_t window_size)
 {
-    if (src == NULL || dst == NULL || !wq_is_filter_window_valid(window_size)) {
+    if (src == NULL || dst == NULL || !wq_is_filter_window_valid(window_size))
+    {
         return WQ_ERROR;
     }
 
-    if (dst->capacity < src->size && wq_dataset_reserve(dst, src->size) != WQ_SUCCESS) {
+    if (dst->capacity < src->size && wq_dataset_reserve(dst, src->size) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
     memcpy(dst->records, src->records, src->size * sizeof(WaterQualityRecord));
     dst->size = src->size;
 
-    if (wq_moving_average_filter(src, dst, WQ_PARAM_TEMP, window_size) != WQ_SUCCESS) return WQ_ERROR;
-    if (wq_moving_average_filter(src, dst, WQ_PARAM_DO, window_size) != WQ_SUCCESS) return WQ_ERROR;
-    if (wq_moving_average_filter(src, dst, WQ_PARAM_PH, window_size) != WQ_SUCCESS) return WQ_ERROR;
-    if (wq_moving_average_filter(src, dst, WQ_PARAM_SALINITY, window_size) != WQ_SUCCESS) return WQ_ERROR;
+    if (wq_moving_average_filter(src, dst, WQ_PARAM_TEMP, window_size) != WQ_SUCCESS)
+        return WQ_ERROR;
+    if (wq_moving_average_filter(src, dst, WQ_PARAM_DO, window_size) != WQ_SUCCESS)
+        return WQ_ERROR;
+    if (wq_moving_average_filter(src, dst, WQ_PARAM_PH, window_size) != WQ_SUCCESS)
+        return WQ_ERROR;
+    if (wq_moving_average_filter(src, dst, WQ_PARAM_SALINITY, window_size) != WQ_SUCCESS)
+        return WQ_ERROR;
 
     return WQ_SUCCESS;
 }
@@ -343,22 +403,27 @@ static int wq_compare_filter_windows(const WaterQualityDataset *dataset, DataOve
     size_t wi;
     size_t pi;
 
-    if (dataset == NULL || overview == NULL) {
+    if (dataset == NULL || overview == NULL)
+    {
         return WQ_ERROR;
     }
 
-    for (wi = 0U; wi < WQ_FILTER_WINDOW_COUNT; ++wi) {
+    for (wi = 0U; wi < WQ_FILTER_WINDOW_COUNT; ++wi)
+    {
         WaterQualityDataset *filtered = wq_dataset_create(dataset->size);
-        if (filtered == NULL) {
+        if (filtered == NULL)
+        {
             return WQ_ERROR;
         }
-        if (wq_filter_main_parameters(dataset, filtered, windows[wi]) != WQ_SUCCESS) {
+        if (wq_filter_main_parameters(dataset, filtered, windows[wi]) != WQ_SUCCESS)
+        {
             wq_dataset_destroy(filtered);
             return WQ_ERROR;
         }
 
         overview->filter_windows[wi] = windows[wi];
-        for (pi = 0U; pi < 4U; ++pi) {
+        for (pi = 0U; pi < 4U; ++pi)
+        {
             WQParameter p = params[pi];
             double before = wq_compute_stddev_parameter(dataset, p);
             double after = wq_compute_stddev_parameter(filtered, p);
@@ -369,13 +434,16 @@ static int wq_compare_filter_windows(const WaterQualityDataset *dataset, DataOve
         wq_dataset_destroy(filtered);
     }
 
-    for (pi = 0U; pi < 4U; ++pi) {
+    for (pi = 0U; pi < 4U; ++pi)
+    {
         WQParameter p = params[pi];
         double best_reduction = overview->filter_window_stddev_before[0][p] - overview->filter_window_stddev_after[0][p];
         size_t best_window = overview->filter_windows[0];
-        for (wi = 1U; wi < WQ_FILTER_WINDOW_COUNT; ++wi) {
+        for (wi = 1U; wi < WQ_FILTER_WINDOW_COUNT; ++wi)
+        {
             double reduction = overview->filter_window_stddev_before[wi][p] - overview->filter_window_stddev_after[wi][p];
-            if (reduction > best_reduction) {
+            if (reduction > best_reduction)
+            {
                 best_reduction = reduction;
                 best_window = overview->filter_windows[wi];
             }
@@ -392,26 +460,32 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
     WaterQualityDataset *filtered;
     size_t i;
 
-    if (dataset == NULL || overview == NULL) {
+    if (dataset == NULL || overview == NULL)
+    {
         return WQ_ERROR;
     }
 
-    if (wq_detect_outliers(dataset, overview) != WQ_SUCCESS) {
+    if (wq_detect_outliers(dataset, overview) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
-    if (wq_process_outliers(dataset, overview) != WQ_SUCCESS) {
+    if (wq_process_outliers(dataset, overview) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
-    if (wq_fill_missing_values(dataset, 10U, 10U, overview) != WQ_SUCCESS) {
+    if (wq_fill_missing_values(dataset, 10U, 10U, overview) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
 
-    if (wq_compare_filter_windows(dataset, overview) != WQ_SUCCESS) {
+    if (wq_compare_filter_windows(dataset, overview) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
 
     filtered = wq_dataset_create(dataset->size);
-    if (filtered == NULL) {
+    if (filtered == NULL)
+    {
         return WQ_ERROR;
     }
     overview->filter_stddev_before[WQ_PARAM_TEMP] = wq_compute_stddev_parameter(dataset, WQ_PARAM_TEMP);
@@ -419,7 +493,8 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
     overview->filter_stddev_before[WQ_PARAM_PH] = wq_compute_stddev_parameter(dataset, WQ_PARAM_PH);
     overview->filter_stddev_before[WQ_PARAM_SALINITY] = wq_compute_stddev_parameter(dataset, WQ_PARAM_SALINITY);
 
-    if (wq_filter_main_parameters(dataset, filtered, 5U) != WQ_SUCCESS) {
+    if (wq_filter_main_parameters(dataset, filtered, 5U) != WQ_SUCCESS)
+    {
         wq_dataset_destroy(filtered);
         return WQ_ERROR;
     }
@@ -433,20 +508,23 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
     overview->filter_stddev_delta[WQ_PARAM_PH] = overview->filter_stddev_after[WQ_PARAM_PH] - overview->filter_stddev_before[WQ_PARAM_PH];
     overview->filter_stddev_delta[WQ_PARAM_SALINITY] = overview->filter_stddev_after[WQ_PARAM_SALINITY] - overview->filter_stddev_before[WQ_PARAM_SALINITY];
 
-    for (i = 0U; i < dataset->size; ++i) {
+    for (i = 0U; i < dataset->size; ++i)
+    {
         dataset->records[i] = filtered->records[i];
     }
     wq_dataset_destroy(filtered);
 
     overview->valid_records = dataset->size;
     overview->invalid_records = (overview->total_records >= overview->valid_records)
-                              ? (overview->total_records - overview->valid_records)
-                              : 0U;
+                                    ? (overview->total_records - overview->valid_records)
+                                    : 0U;
 
-    if (wq_write_csv(WQ_CLEAN_CSV_FILE, dataset) != WQ_SUCCESS) {
+    if (wq_write_csv(WQ_CLEAN_CSV_FILE, dataset) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
-    if (wq_write_binary(WQ_CLEAN_BIN_FILE, dataset) != WQ_SUCCESS) {
+    if (wq_write_binary(WQ_CLEAN_BIN_FILE, dataset) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
 
@@ -454,7 +532,8 @@ int wq_preprocess_dataset(WaterQualityDataset *dataset, DataOverview *overview)
                                    WQ_CLEAN_CSV_FILE,
                                    WQ_CLEAN_BIN_FILE,
                                    &overview->csv_storage,
-                                   &overview->binary_storage) == WQ_SUCCESS) {
+                                   &overview->binary_storage) == WQ_SUCCESS)
+    {
         overview->storage_benchmark_valid = true;
     }
 

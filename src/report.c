@@ -5,11 +5,16 @@
 
 static const char *wq_warning_type_to_string(WQWarningType type)
 {
-    switch (type) {
-    case WQ_WARNING_MILD_HYPOXIA: return "亚缺氧";
-    case WQ_WARNING_SEVERE_HYPOXIA: return "严重缺氧";
-    case WQ_WARNING_SALINITY_MUTATION: return "盐度突变";
-    default: return "未知";
+    switch (type)
+    {
+    case WQ_WARNING_MILD_HYPOXIA:
+        return "亚缺氧";
+    case WQ_WARNING_SEVERE_HYPOXIA:
+        return "严重缺氧";
+    case WQ_WARNING_SALINITY_MUTATION:
+        return "盐度突变";
+    default:
+        return "未知";
     }
 }
 
@@ -25,16 +30,19 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
     size_t i;
     size_t j;
 
-    if (filename == NULL || overview == NULL) return WQ_ERROR;
+    if (filename == NULL || overview == NULL)
+        return WQ_ERROR;
     if (wq_ensure_directory("output") != WQ_SUCCESS ||
         wq_ensure_directory("output/reports") != WQ_SUCCESS ||
         wq_ensure_directory("output/clean") != WQ_SUCCESS ||
-        wq_ensure_directory(WQ_BACKUP_DIR) != WQ_SUCCESS) {
+        wq_ensure_directory(WQ_BACKUP_DIR) != WQ_SUCCESS)
+    {
         return WQ_ERROR;
     }
 
     fp = fopen(filename, "w");
-    if (fp == NULL) return WQ_ERROR;
+    if (fp == NULL)
+        return WQ_ERROR;
 
     fprintf(fp, "=== 数据概览报告 ===\n");
     fprintf(fp, "总记录数: %lu\n", (unsigned long)overview->total_records);
@@ -47,18 +55,22 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
     fprintf(fp, "修复异常记录数: %lu\n", (unsigned long)overview->fixed_outlier_records);
     fprintf(fp, "删除异常记录数: %lu\n", (unsigned long)overview->deleted_outlier_records);
     fprintf(fp, "异常时间跨度: ");
-    if (overview->outlier_records > 0U) {
+    if (overview->outlier_records > 0U)
+    {
         wq_print_time(fp, &overview->first_outlier_time);
         fprintf(fp, " ~ ");
         wq_print_time(fp, &overview->last_outlier_time);
-    } else {
+    }
+    else
+    {
         fprintf(fp, "无");
     }
     fprintf(fp, "\n");
     fprintf(fp, "清洗CSV路径: %s\n清洗二进制路径: %s\n", WQ_CLEAN_CSV_FILE, WQ_CLEAN_BIN_FILE);
 
     fprintf(fp, "\n[默认窗口5滤波标准差变化]\n");
-    for (i = 0U; i < 4U; ++i) {
+    for (i = 0U; i < 4U; ++i)
+    {
         WQParameter p = filter_params[i];
         fprintf(fp, "%s: %.6f -> %.6f (Δ=%.6f)\n",
                 wq_parameter_to_string(p),
@@ -68,10 +80,13 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
     }
 
     fprintf(fp, "\n[移动平均滤波窗口对比]\n");
-    if (overview->filter_window_comparison_valid) {
+    if (overview->filter_window_comparison_valid)
+    {
         fprintf(fp, "窗口,参数,滤波前标准差,滤波后标准差,变化值,噪声减少率\n");
-        for (i = 0U; i < WQ_FILTER_WINDOW_COUNT; ++i) {
-            for (j = 0U; j < 4U; ++j) {
+        for (i = 0U; i < WQ_FILTER_WINDOW_COUNT; ++i)
+        {
+            for (j = 0U; j < 4U; ++j)
+            {
                 WQParameter p = filter_params[j];
                 double before = overview->filter_window_stddev_before[i][p];
                 double after = overview->filter_window_stddev_after[i][p];
@@ -91,12 +106,15 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
                 (unsigned long)overview->best_filter_window[WQ_PARAM_DO],
                 (unsigned long)overview->best_filter_window[WQ_PARAM_PH],
                 (unsigned long)overview->best_filter_window[WQ_PARAM_SALINITY]);
-    } else {
+    }
+    else
+    {
         fprintf(fp, "尚未执行完整预处理，暂无窗口3/5/7/9/11对比结果。\n");
     }
 
     fprintf(fp, "\n[CSV与二进制存储性能对比]\n");
-    if (overview->storage_benchmark_valid) {
+    if (overview->storage_benchmark_valid)
+    {
         fprintf(fp, "格式,文件大小(bytes),写入时间(s),读取时间(s),人类可读\n");
         fprintf(fp, "CSV,%lu,%.6f,%.6f,%s\n",
                 overview->csv_storage.file_size_bytes,
@@ -108,7 +126,9 @@ int wq_write_overview_report(const char *filename, const DataOverview *overview)
                 overview->binary_storage.write_seconds,
                 overview->binary_storage.read_seconds,
                 overview->binary_storage.human_readable ? "是" : "否");
-    } else {
+    }
+    else
+    {
         fprintf(fp, "尚未执行存储性能对比。完成预处理或保存后会自动生成。\n");
     }
 
@@ -134,25 +154,41 @@ int wq_write_statistics_report(const char *filename,
     double max_corr = -2.0, min_corr = 2.0;
     int max_i = -1, max_j = -1, min_i = -1, min_j = -1;
     (void)dataset;
-    if (filename == NULL || statistics == NULL) return WQ_ERROR;
+    if (filename == NULL || statistics == NULL)
+        return WQ_ERROR;
     fp = fopen(filename, "w");
-    if (fp == NULL) return WQ_ERROR;
+    if (fp == NULL)
+        return WQ_ERROR;
 
     fprintf(fp, "=== 统计分析报告 ===\n\n[六参数统计量]\n");
-    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i) {
+    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i)
+    {
         const ParameterStatistics *ps = &statistics->parameter_stats[i];
         fprintf(fp, "%s: mean=%.6f min=%.6f max=%.6f stddev=%.6f n=%lu\n",
                 wq_parameter_to_string((WQParameter)i), ps->mean, ps->min, ps->max, ps->stddev, (unsigned long)ps->count);
     }
 
     fprintf(fp, "\n[Pearson相关矩阵]\n");
-    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i) {
-        for (j = 0U; j < (size_t)WQ_PARAM_COUNT; ++j) {
+    for (i = 0U; i < (size_t)WQ_PARAM_COUNT; ++i)
+    {
+        for (j = 0U; j < (size_t)WQ_PARAM_COUNT; ++j)
+        {
             double c = statistics->correlation_matrix[i][j];
             fprintf(fp, "%8.4f ", c);
-            if (i != j) {
-                if (c > max_corr) { max_corr = c; max_i = (int)i; max_j = (int)j; }
-                if (c < min_corr) { min_corr = c; min_i = (int)i; min_j = (int)j; }
+            if (i != j)
+            {
+                if (c > max_corr)
+                {
+                    max_corr = c;
+                    max_i = (int)i;
+                    max_j = (int)j;
+                }
+                if (c < min_corr)
+                {
+                    min_corr = c;
+                    min_i = (int)i;
+                    min_j = (int)j;
+                }
             }
         }
         fputc('\n', fp);
@@ -176,15 +212,19 @@ int wq_write_warning_report(const char *filename,
 {
     FILE *fp;
     size_t i;
-    if (filename == NULL) return WQ_ERROR;
+    if (filename == NULL)
+        return WQ_ERROR;
     fp = fopen(filename, "w");
-    if (fp == NULL) return WQ_ERROR;
+    if (fp == NULL)
+        return WQ_ERROR;
     fprintf(fp, "=== 预警报告 ===\n");
-    if (warnings == NULL || warning_count == 0U) {
+    if (warnings == NULL || warning_count == 0U)
+    {
         fprintf(fp, "未检测到预警。\n");
         return (fclose(fp) == 0) ? WQ_SUCCESS : WQ_ERROR;
     }
-    for (i = 0U; i < warning_count; ++i) {
+    for (i = 0U; i < warning_count; ++i)
+    {
         fprintf(fp, "\n[%lu] 时间: ", (unsigned long)(i + 1U));
         wq_print_time(fp, &warnings[i].time);
         fprintf(fp, "\n类型: %s\n说明: %s\n处理建议: %s\n", wq_warning_type_to_string(warnings[i].type), warnings[i].message, warnings[i].suggestion);
@@ -199,16 +239,20 @@ int wq_write_prediction_report(const char *filename,
     FILE *fp;
     size_t i;
     size_t best_idx = 0U;
-    if (filename == NULL || models == NULL || model_count == 0U) return WQ_ERROR;
+    if (filename == NULL || models == NULL || model_count == 0U)
+        return WQ_ERROR;
     fp = fopen(filename, "w");
-    if (fp == NULL) return WQ_ERROR;
+    if (fp == NULL)
+        return WQ_ERROR;
 
     fprintf(fp, "=== 预测分析报告 ===\n\n");
-    for (i = 0U; i < model_count; ++i) {
+    for (i = 0U; i < model_count; ++i)
+    {
         fprintf(fp, "%s -> %s: y = %.6f*x + %.6f, R2=%.6f, RMSE=%.6f\n",
                 wq_parameter_to_string(models[i].x_param), wq_parameter_to_string(models[i].y_param),
                 models[i].slope, models[i].intercept, models[i].r_squared, models[i].rmse);
-        if (models[i].r_squared > models[best_idx].r_squared) best_idx = i;
+        if (models[i].r_squared > models[best_idx].r_squared)
+            best_idx = i;
     }
 
     fprintf(fp, "\nR2最高单因子: %s -> %s (R2=%.6f)\n",
@@ -228,11 +272,14 @@ int wq_write_discussion_report(const char *filename,
 {
     FILE *fp;
     size_t i;
-    if (filename == NULL || discussions == NULL) return WQ_ERROR;
+    if (filename == NULL || discussions == NULL)
+        return WQ_ERROR;
     fp = fopen(filename, append ? "a" : "w");
-    if (fp == NULL) return WQ_ERROR;
+    if (fp == NULL)
+        return WQ_ERROR;
     fprintf(fp, "\n=== 分析讨论 ===\n");
-    for (i = 0U; i < discussion_count; ++i) {
+    for (i = 0U; i < discussion_count; ++i)
+    {
         fprintf(fp, "\n[%s] %s\n%s\n", wq_discussion_topic_to_string(discussions[i].topic), discussions[i].title, discussions[i].content);
     }
     return (fclose(fp) == 0) ? WQ_SUCCESS : WQ_ERROR;
@@ -240,7 +287,8 @@ int wq_write_discussion_report(const char *filename,
 
 const char *wq_discussion_topic_to_string(WQDiscussionTopic topic)
 {
-    switch (topic) {
+    switch (topic)
+    {
     case WQ_DISCUSSION_STORAGE_FORMAT:
         return "存储格式分析讨论";
     case WQ_DISCUSSION_OUTLIER_PROCESSING:
@@ -262,10 +310,13 @@ int wq_view_text_report(const char *filename)
 {
     FILE *fp;
     char line[512];
-    if (filename == NULL) return WQ_ERROR;
+    if (filename == NULL)
+        return WQ_ERROR;
     fp = fopen(filename, "r");
-    if (fp == NULL) return WQ_ERROR;
-    while (fgets(line, sizeof(line), fp) != NULL) {
+    if (fp == NULL)
+        return WQ_ERROR;
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
         fputs(line, stdout);
     }
     return (fclose(fp) == 0) ? WQ_SUCCESS : WQ_ERROR;
