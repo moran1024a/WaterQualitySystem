@@ -45,4 +45,6 @@ int wq_read_int(const char *prompt, int *value_out);
 /* 从控制台读取浮点数。 */
 int wq_read_double(const char *prompt, double *value_out);
 
+int wq_ensure_directory(const char *path);
+
 #endif
